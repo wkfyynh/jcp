@@ -15,7 +15,7 @@ import { useMarketEvents } from './hooks/useMarketEvents';
 import { Stock, KLineData, OrderBook, TimePeriod, Telegraph, MarketIndex } from './types';
 import { Radio, Settings, List, Minus, Square, X, Copy, Briefcase, TrendingUp } from 'lucide-react';
 import logo from './assets/images/logo.png';
-import { GetTelegraphList, OpenURL, GetMarketStatus, GetMarketIndices, WindowMinimize, WindowMaximize, WindowClose } from '../wailsjs/go/main/App';
+import { GetTelegraphList, OpenURL, WindowMinimize, WindowMaximize, WindowClose } from '../wailsjs/go/main/App';
 import { WindowIsMaximised } from '../wailsjs/runtime/runtime';
 import { services } from '../wailsjs/go/models';
 
@@ -66,6 +66,20 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // 处理市场状态更新（来自后端推送）
+  const handleMarketStatusUpdate = useCallback((status: services.MarketStatus) => {
+    if (status) {
+      setMarketStatus(status);
+    }
+  }, []);
+
+  // 处理大盘指数更新（来自后端推送）
+  const handleMarketIndicesUpdate = useCallback((indices: MarketIndex[]) => {
+    if (indices) {
+      setMarketIndices(indices);
+    }
+  }, []);
+
   // 获取快讯列表
   const handleShowTelegraphList = async () => {
     if (!showTelegraphList) {
@@ -95,6 +109,8 @@ const App: React.FC = () => {
     onStockUpdate: handleStockUpdate,
     onOrderBookUpdate: handleOrderBookUpdate,
     onTelegraphUpdate: handleTelegraphUpdate,
+    onMarketStatusUpdate: handleMarketStatusUpdate,
+    onMarketIndicesUpdate: handleMarketIndicesUpdate,
   });
 
   // Handle Adding Stock
@@ -179,36 +195,6 @@ const App: React.FC = () => {
     };
     loadKLineData();
   }, [selectedSymbol, timePeriod]);
-
-  // 获取市场状态，每分钟刷新一次
-  useEffect(() => {
-    const fetchMarketStatus = async () => {
-      try {
-        const status = await GetMarketStatus();
-        setMarketStatus(status);
-      } catch (err) {
-        console.error('Failed to get market status:', err);
-      }
-    };
-    fetchMarketStatus();
-    const interval = setInterval(fetchMarketStatus, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 获取大盘指数数据，每3秒刷新一次
-  useEffect(() => {
-    const fetchMarketIndices = async () => {
-      try {
-        const indices = await GetMarketIndices();
-        setMarketIndices(indices || []);
-      } catch (err) {
-        console.error('Failed to get market indices:', err);
-      }
-    };
-    fetchMarketIndices();
-    const interval = setInterval(fetchMarketIndices, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
   // 初始化窗口最大化状态
   useEffect(() => {

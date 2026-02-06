@@ -244,17 +244,6 @@ func (a *App) SearchStocks(keyword string) []services.StockSearchResult {
 	return a.configService.SearchStocks(keyword, 20)
 }
 
-// GetMarketStatus 获取市场交易状态
-func (a *App) GetMarketStatus() services.MarketStatus {
-	return a.marketService.GetMarketStatus()
-}
-
-// GetMarketIndices 获取大盘指数数据
-func (a *App) GetMarketIndices() []models.MarketIndex {
-	indices, _ := a.marketService.GetMarketIndices()
-	return indices
-}
-
 // getDefaultAIConfig 获取默认AI配置
 func (a *App) getDefaultAIConfig(config *models.AppConfig) *models.AIConfig {
 	for i := range config.AIConfigs {

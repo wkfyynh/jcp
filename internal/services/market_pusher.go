@@ -15,6 +15,8 @@ const (
 	EventStockUpdate        = "market:stock:update"
 	EventOrderBookUpdate    = "market:orderbook:update"
 	EventTelegraphUpdate    = "market:telegraph:update"
+	EventMarketStatusUpdate = "market:status:update"
+	EventMarketIndicesUpdate = "market:indices:update"
 	EventMarketSubscribe    = "market:subscribe"
 	EventOrderBookSubscribe = "market:orderbook:subscribe"
 )
@@ -134,15 +136,23 @@ func (p *MarketDataPusher) pushLoop() {
 	orderBookTicker := time.NewTicker(1 * time.Second)
 	// 快讯数据推送间隔：30秒
 	telegraphTicker := time.NewTicker(30 * time.Second)
+	// 市场状态推送间隔：60秒
+	marketStatusTicker := time.NewTicker(60 * time.Second)
+	// 大盘指数推送间隔：3秒
+	marketIndicesTicker := time.NewTicker(3 * time.Second)
 
 	defer stockTicker.Stop()
 	defer orderBookTicker.Stop()
 	defer telegraphTicker.Stop()
+	defer marketStatusTicker.Stop()
+	defer marketIndicesTicker.Stop()
 
 	// 立即推送一次
 	p.pushStockData()
 	p.pushOrderBookData()
 	p.pushTelegraphData()
+	p.pushMarketStatus()
+	p.pushMarketIndices()
 
 	for {
 		select {
@@ -154,6 +164,10 @@ func (p *MarketDataPusher) pushLoop() {
 			p.pushOrderBookData()
 		case <-telegraphTicker.C:
 			p.pushTelegraphData()
+		case <-marketStatusTicker.C:
+			p.pushMarketStatus()
+		case <-marketIndicesTicker.C:
+			p.pushMarketIndices()
 		}
 	}
 }
@@ -223,6 +237,21 @@ func (p *MarketDataPusher) pushTelegraphData() {
 
 	// 推送到前端
 	runtime.EventsEmit(p.ctx, EventTelegraphUpdate, latest)
+}
+
+// pushMarketStatus 推送市场状态
+func (p *MarketDataPusher) pushMarketStatus() {
+	status := p.marketService.GetMarketStatus()
+	runtime.EventsEmit(p.ctx, EventMarketStatusUpdate, status)
+}
+
+// pushMarketIndices 推送大盘指数
+func (p *MarketDataPusher) pushMarketIndices() {
+	indices, err := p.marketService.GetMarketIndices()
+	if err != nil {
+		return
+	}
+	runtime.EventsEmit(p.ctx, EventMarketIndicesUpdate, indices)
 }
 
 // AddSubscription 添加订阅
